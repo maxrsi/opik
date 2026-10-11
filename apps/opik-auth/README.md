@@ -44,3 +44,22 @@ java -jar target/opik-auth.jar server config.yml
 ```
 
 See `config.yml` for all `OPIK_AUTH_*` environment variables.
+
+## Running the full stack (docker compose)
+
+```bash
+cd deployment/docker-compose
+export OPIK_AUTH_SECRET=$(openssl rand -base64 48)            # required; keep it stable
+export OPIK_AUTH_BOOTSTRAP_ADMIN_PASSWORD='choose-a-long-one'  # optional (else random, printed once in the log)
+docker compose -f docker-compose.yaml -f docker-compose.auth.yaml --profile opik up -d --build
+# UI: http://localhost:5173  → log in as admin, set a new password
+docker compose -f docker-compose.yaml -f docker-compose.auth.yaml logs opik-auth | grep 'Initial admin'
+```
+
+SDK: create a key under *My API keys*, then `OPIK_URL_OVERRIDE=http://localhost:5173/api OPIK_API_KEY=<key>
+OPIK_WORKSPACE=default`.
+
+## Smoke tests
+
+`e2e/smoke.sh` (curl: login, roles, API keys, revocation, audit rows in ClickHouse) and `e2e/ui.mjs` (headless
+browser: login page, menus, admin pages, Viewer/Editor buttons) run against a fresh compose stack.

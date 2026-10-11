@@ -114,7 +114,7 @@ const AuditLogPage: React.FC = () => {
           onChange={(e) => resetPage(setAction)(e.target.value)}
         />
         <Select value={outcome} onValueChange={resetPage(setOutcome)}>
-          <SelectTrigger className="h-8 w-32">
+          <SelectTrigger className="h-8 w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -125,7 +125,7 @@ const AuditLogPage: React.FC = () => {
           </SelectContent>
         </Select>
         <Select value={source} onValueChange={resetPage(setSource)}>
-          <SelectTrigger className="h-8 w-32">
+          <SelectTrigger className="h-8 w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
