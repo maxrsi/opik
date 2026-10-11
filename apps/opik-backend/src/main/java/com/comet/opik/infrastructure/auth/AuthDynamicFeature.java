@@ -1,5 +1,6 @@
 package com.comet.opik.infrastructure.auth;
 
+import com.comet.opik.infrastructure.OpikConfiguration;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.DynamicFeature;
@@ -22,10 +23,13 @@ public class AuthDynamicFeature implements DynamicFeature {
     public static final String REQUIRED_PERMISSIONS_PROPERTY = "auth.requiredPermissions";
 
     private final @NonNull AuthFilter authFilter;
+    private final @NonNull OpikConfiguration config;
 
     @Override
     public void configure(ResourceInfo resourceInfo, FeatureContext context) {
-        List<String> permissions = RequiredPermissionsResolver.getRequiredPermissions(resourceInfo);
+        List<String> permissions = UnannotatedWritePermissionPolicy.apply(
+                RequiredPermissionsResolver.getRequiredPermissions(resourceInfo), resourceInfo,
+                config.getAuthentication());
         context.register((ContainerRequestFilter) requestContext -> {
             requestContext.setProperty(REQUIRED_PERMISSIONS_PROPERTY, permissions);
             authFilter.filter(requestContext);

@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => {
     env.VITE_OPIK_AI_BACKEND_PORT || "8081",
     10,
   );
+  const authPort = parseInt(env.VITE_AUTH_PORT || "8090", 10);
   const assistantPort = parseInt(env.VITE_ASSISTANT_SIDEBAR_PORT || "3333", 10);
   const assistantApiPort = parseInt(env.VITE_ASSISTANT_API_PORT || "9080", 10);
   // ai-cost-backend (cost-api) — serves the AI Spend API. dev-runner sets the
@@ -75,6 +76,11 @@ export default defineConfig(({ mode }) => {
           target: `http://localhost:${backendPort}`,
           changeOrigin: true,
           rewrite: (requestPath) => requestPath.replace(/^\/api/, ""),
+        },
+        // opik-auth (selfhosted plugin): login/session API, served by nginx in docker-compose.
+        "/auth": {
+          target: `http://localhost:${authPort}`,
+          changeOrigin: false,
         },
         "/opik-ai": {
           target: `http://localhost:${opikAiBackendPort}`,

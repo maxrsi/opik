@@ -63,7 +63,8 @@ public class AuthModule extends DropwizardAwareModule<OpikConfiguration> {
                 config.getRequestTimeout().toJavaDuration(), config.getRequestMaxRetries(),
                 config.getRequestRetryMinBackoff().toJavaDuration(),
                 config.getRequestRetryMaxBackoff().toJavaDuration(),
-                workspacePermissionsService, redactionService.isEnabled());
+                workspacePermissionsService, redactionService.isEnabled(),
+                config.isAllowDefaultWorkspaceForSession());
     }
 
     /**

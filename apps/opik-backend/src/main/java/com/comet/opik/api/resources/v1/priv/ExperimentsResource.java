@@ -395,6 +395,7 @@ public class ExperimentsResource {
             }), maxItems = 2000)))
     })
     @JsonView(Experiment.View.Public.class)
+    @RequiredPermissions(WorkspaceUserPermission.EXPERIMENT_VIEW)
     public ChunkedOutput<JsonNode> streamExperiments(
             @RequestBody(content = @Content(schema = @Schema(implementation = ExperimentStreamRequest.class))) @NotNull @Valid ExperimentStreamRequest request) {
         var workspaceId = requestContext.get().getWorkspaceId();
@@ -440,6 +441,7 @@ public class ExperimentsResource {
                     ErrorMessage.class
             }), maxItems = 2000)))
     })
+    @RequiredPermissions(WorkspaceUserPermission.EXPERIMENT_VIEW)
     public ChunkedOutput<JsonNode> streamExperimentItems(
             @RequestBody(content = @Content(schema = @Schema(implementation = ExperimentItemStreamRequest.class))) @NotNull @Valid ExperimentItemStreamRequest request) {
         var workspaceId = requestContext.get().getWorkspaceId();

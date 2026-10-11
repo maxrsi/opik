@@ -211,4 +211,8 @@ public class OpikConfiguration extends JobConfiguration {
 
     @Valid @NotNull @JsonProperty
     private RedactionConfig redaction = new RedactionConfig();
+
+    /** Fork-only: audit log of write operations (see com.comet.opik.ext.audit). */
+    @Valid @NotNull @JsonProperty
+    private com.comet.opik.ext.audit.AuditConfig audit = new com.comet.opik.ext.audit.AuditConfig();
 }

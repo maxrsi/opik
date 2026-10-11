@@ -1,0 +1,97 @@
+# Fork: self-hosted login / RBAC / audit (opik-auth). Override file; the upstream docker-compose.yaml stays untouched.
+#
+#   export OPIK_AUTH_SECRET=$(openssl rand -base64 48)          # required, keep it stable across restarts
+#   export OPIK_AUTH_BOOTSTRAP_ADMIN_PASSWORD='change-me-please' # optional; empty = random password printed once in
+#                                                                # `docker compose logs opik-auth`
+#   docker compose -f docker-compose.yaml -f docker-compose.auth.yaml --profile opik up -d --build
+#
+# Images are built locally (backend and frontend carry fork changes, the frontend is built with the selfhosted
+# plugin), so the upstream ghcr images are never pulled for these services.
+
+services:
+  # One-shot: creates the opik_auth database and user in the existing MySQL (docker-entrypoint-initdb.d only runs on a
+  # fresh volume, this also covers existing installations). Idempotent.
+  mysql-auth-init:
+    image: mysql:8.4.2
+    profiles: [ opik, backend, opik-otel ]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_PWD: ${MYSQL_ROOT_PASSWORD:-opik}
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        mysql -h mysql -uroot -e "CREATE DATABASE IF NOT EXISTS opik_auth CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+        CREATE USER IF NOT EXISTS 'opik_auth'@'%' IDENTIFIED BY '${OPIK_AUTH_DB_PASS:-opik_auth}';
+        GRANT ALL PRIVILEGES ON opik_auth.* TO 'opik_auth'@'%';"
+    restart: "no"
+
+  opik-auth:
+    image: opik-auth:${OPIK_AUTH_VERSION:-latest}
+    pull_policy: build
+    build:
+      context: ../../apps/opik-auth
+      dockerfile: Dockerfile
+    profiles: [ opik, backend, opik-otel ]
+    hostname: opik-auth
+    environment:
+      OPIK_AUTH_DB_URL: "jdbc:mysql://mysql:3306/opik_auth?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&rewriteBatchedStatements=true"
+      OPIK_AUTH_DB_USER: opik_auth
+      OPIK_AUTH_DB_PASS: ${OPIK_AUTH_DB_PASS:-opik_auth}
+      OPIK_AUTH_SECRET: ${OPIK_AUTH_SECRET:?set OPIK_AUTH_SECRET to a random string of 32+ characters}
+      OPIK_AUTH_COOKIE_SECURE: ${OPIK_AUTH_COOKIE_SECURE:-false}
+      OPIK_AUTH_PUBLIC_ORIGIN: ${OPIK_AUTH_PUBLIC_ORIGIN:-http://localhost:5173}
+      OPIK_AUTH_SESSION_IDLE_TIMEOUT: ${OPIK_AUTH_SESSION_IDLE_TIMEOUT:-12h}
+      OPIK_AUTH_SESSION_ABSOLUTE_TIMEOUT: ${OPIK_AUTH_SESSION_ABSOLUTE_TIMEOUT:-7d}
+      OPIK_AUTH_BOOTSTRAP_ADMIN_USERNAME: ${OPIK_AUTH_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      OPIK_AUTH_BOOTSTRAP_ADMIN_PASSWORD: ${OPIK_AUTH_BOOTSTRAP_ADMIN_PASSWORD:-}
+      OPIK_AUTH_CH_ENABLED: "true"
+      OPIK_AUTH_CH_URL: http://clickhouse:8123
+      OPIK_AUTH_CH_DATABASE: opik
+      OPIK_AUTH_CH_USER: ${OPIK_AUTH_CH_USER:-opik}
+      OPIK_AUTH_CH_PASS: ${OPIK_AUTH_CH_PASS:-opik}
+      JAVA_OPTS: "-XX:MaxRAMPercentage=60 -XX:+UseG1GC"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/healthcheck" ]
+      interval: 2s
+      timeout: 5s
+      retries: 90
+      start_period: 5s
+    depends_on:
+      mysql-auth-init:
+        condition: service_completed_successfully
+      clickhouse:
+        condition: service_healthy
+
+  backend:
+    image: opik-backend-auth:${OPIK_VERSION:-latest}
+    pull_policy: build
+    environment:
+      AUTH_ENABLED: "true"
+      REACT_SERVICE_URL: http://opik-auth:8080
+      # Revocations / role changes reach the backend within this many seconds (Redis credential cache).
+      AUTH_API_KEY_RESOLUTION_CACHE_TTL_IN_SEC: ${AUTH_API_KEY_RESOLUTION_CACHE_TTL_IN_SEC:-5}
+      AUTH_ALLOW_DEFAULT_WORKSPACE_FOR_SESSION: "true"
+      AUTH_UNANNOTATED_WRITE_PERMISSION: workspace_write
+      AUTH_UNANNOTATED_WRITE_EXEMPTIONS: "AuthenticationResource#checkAccess,WelcomeWizardResource#submitWizard,ReportFailuresResource#create,DatasetsResource#markDatasetExportJobViewed,OllieStateResource#upload,OllieStateResource#delete"
+      AUDIT_ENABLED: ${AUDIT_ENABLED:-true}
+    depends_on:
+      opik-auth:
+        condition: service_healthy
+
+  frontend:
+    image: opik-frontend-selfhosted:${OPIK_VERSION:-latest}
+    pull_policy: build
+    build:
+      args:
+        BUILD_PLUGINS: selfhosted
+    volumes:
+      - ./nginx_selfhosted_local.conf:/etc/nginx/templates/default.conf.template:ro
+
+  # It logs demo data without an API key, which the authenticated backend rejects. To get demo data, create a
+  # service account in the UI and run the generator with its key instead.
+  demo-data-generator:
+    environment:
+      CREATE_DEMO_DATA: "false"

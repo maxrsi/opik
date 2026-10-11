@@ -30,6 +30,30 @@ public class AuthenticationConfig {
     private UrlConfig reactService;
 
     /**
+     * Accept browser sessions for the {@code default} workspace. Off by default (Comet-hosted behaviour, where
+     * {@code default} is an SDK-only workspace). Self-hosted single-workspace deployments that keep all data in
+     * {@code default} and authenticate through an external auth service turn this on.
+     */
+    @JsonProperty
+    private boolean allowDefaultWorkspaceForSession;
+
+    /**
+     * Permission required for POST/PUT/PATCH/DELETE resource methods that carry no {@code @RequiredPermissions}.
+     * Blank (default) keeps the upstream behaviour: such methods only require authentication. When set (e.g.
+     * {@code workspace_write}), read-only roles can be denied every un-annotated write without touching each
+     * resource.
+     */
+    @JsonProperty
+    private String unannotatedWritePermission;
+
+    /**
+     * Comma separated {@code ResourceSimpleClassName#methodName} entries exempted from
+     * {@link #unannotatedWritePermission} (write-like endpoints every authenticated member may call).
+     */
+    @JsonProperty
+    private String unannotatedWriteExemptions;
+
+    /**
      * Per-call read timeout for auth requests to the React service, overriding the shared
      * jerseyClient timeout (30s) for this hop only. Sized from measured production latency of
      * successful auth calls: p99.99 is 1.15s, so 3s is ~2.6x and normal calls never reach it.

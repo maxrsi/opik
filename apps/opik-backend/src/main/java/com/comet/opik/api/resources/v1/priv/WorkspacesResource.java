@@ -66,6 +66,7 @@ public class WorkspacesResource {
             @ApiResponse(responseCode = "200", description = "Workspace Metrics", content = @Content(schema = @Schema(implementation = WorkspaceMetricsSummaryResponse.class))),
             @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorMessage.class)))
     })
+    @RequiredPermissions(WorkspaceUserPermission.PROJECT_DATA_VIEW)
     public Response metricsSummary(
             @RequestBody(content = @Content(schema = @Schema(implementation = WorkspaceMetricsSummaryRequest.class))) @NotNull @Valid WorkspaceMetricsSummaryRequest request) {
 
@@ -89,6 +90,7 @@ public class WorkspacesResource {
             @ApiResponse(responseCode = "200", description = "Workspace metric data by days", content = @Content(schema = @Schema(implementation = WorkspaceMetricResponse.class))),
             @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorMessage.class)))
     })
+    @RequiredPermissions(WorkspaceUserPermission.PROJECT_DATA_VIEW)
     public Response getMetric(
             @RequestBody(content = @Content(schema = @Schema(implementation = WorkspaceMetricsSummaryRequest.class))) @NotNull @Valid WorkspaceMetricRequest request) {
 
@@ -113,6 +115,7 @@ public class WorkspacesResource {
             @ApiResponse(responseCode = "200", description = "Workspace Metrics", content = @Content(schema = @Schema(implementation = WorkspaceMetricsSummaryResponse.Result.class))),
             @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorMessage.class)))
     })
+    @RequiredPermissions(WorkspaceUserPermission.PROJECT_DATA_VIEW)
     public Response costsSummary(
             @RequestBody(content = @Content(schema = @Schema(implementation = WorkspaceMetricsSummaryRequest.class))) @NotNull @Valid WorkspaceMetricsSummaryRequest request) {
 
@@ -135,6 +138,7 @@ public class WorkspacesResource {
             @ApiResponse(responseCode = "200", description = "Workspace cost data by days", content = @Content(schema = @Schema(implementation = WorkspaceMetricResponse.class))),
             @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorMessage.class)))
     })
+    @RequiredPermissions(WorkspaceUserPermission.PROJECT_DATA_VIEW)
     public Response getCost(
             @RequestBody(content = @Content(schema = @Schema(implementation = WorkspaceMetricsSummaryRequest.class))) @NotNull @Valid WorkspaceMetricRequest request) {
 
