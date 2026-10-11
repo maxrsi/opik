@@ -50,7 +50,7 @@ public class AuditQueryService {
     }
 
     @Builder
-    public record Criteria(String workspaceId, Instant from, Instant to, String actor, String action,
+    public record Criteria(String workspaceId, String workspaceName, Instant from, Instant to, String actor, String action,
             String resourceType, String resourceId, String outcome, String source, Integer status) {
     }
 
@@ -63,8 +63,16 @@ public class AuditQueryService {
     static Query buildWhere(Criteria c) {
         var clauses = new ArrayList<String>();
         var params = new LinkedHashMap<String, String>();
-        clauses.add("workspace_id = {ws:String}");
-        params.put("ws", c.workspaceId());
+        if (StringUtils.isNotBlank(c.workspaceName())) {
+            // opik-backend records requests it rejected before the workspace was resolved (http.denied) with the
+            // workspace name from the Comet-Workspace header only.
+            clauses.add("(workspace_id = {ws:String} OR (workspace_id = '' AND workspace_name = {wsName:String}))");
+            params.put("ws", c.workspaceId());
+            params.put("wsName", c.workspaceName());
+        } else {
+            clauses.add("workspace_id = {ws:String}");
+            params.put("ws", c.workspaceId());
+        }
         clauses.add("event_time >= fromUnixTimestamp64Milli({from:Int64})");
         params.put("from", String.valueOf(c.from().toEpochMilli()));
         clauses.add("event_time <= fromUnixTimestamp64Milli({to:Int64})");
@@ -120,15 +128,23 @@ public class AuditQueryService {
         return new Page(page, size, total, content);
     }
 
+    /**
+     * CSV export query. {@code event_time} must stay the raw column: aliasing an expression as {@code event_time}
+     * would shadow the column inside WHERE (ClickHouse resolves aliases there) and break the time filter.
+     */
+    static String exportSql(String database, String where) {
+        return "SELECT id, event_time, source, actor, actor_type, action, outcome, "
+                + "http_method, route, path, status, resource_type, resource_id, client_ip, user_agent, duration_ms, "
+                + "details FROM " + database + ".audit_logs WHERE " + where
+                + " ORDER BY event_time DESC, id DESC LIMIT {limit:UInt32} FORMAT CSVWithNames";
+    }
+
     public InputStream exportCsv(Criteria criteria) {
         ensureEnabled();
         var q = buildWhere(criteria);
         var params = new LinkedHashMap<>(q.params());
         params.put("limit", String.valueOf(MAX_EXPORT_ROWS));
-        String sql = "SELECT id, toString(event_time) AS event_time, source, actor, actor_type, action, outcome, "
-                + "http_method, route, path, status, resource_type, resource_id, client_ip, user_agent, duration_ms, "
-                + "details FROM " + settings.getDatabase() + ".audit_logs WHERE " + q.where()
-                + " ORDER BY event_time DESC, id DESC LIMIT {limit:UInt32} FORMAT CSVWithNames";
+        String sql = exportSql(settings.getDatabase(), q.where());
         try {
             var response = http.send(request(sql, params), HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() / 100 != 2) {

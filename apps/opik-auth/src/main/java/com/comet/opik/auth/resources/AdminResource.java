@@ -191,7 +191,7 @@ public class AdminResource {
             throw ApiError.badRequest("Time range must not exceed 180 days");
         }
         var criteria = AuditQueryService.Criteria.builder()
-                .workspaceId(p.workspace().id()).from(fromTs).to(toTs).actor(actor).action(action)
+                .workspaceId(p.workspace().id()).workspaceName(p.workspace().name()).from(fromTs).to(toTs).actor(actor).action(action)
                 .resourceType(resourceType).resourceId(resourceId).outcome(outcome).source(source).status(status)
                 .build();
         if ("csv".equalsIgnoreCase(format)) {
