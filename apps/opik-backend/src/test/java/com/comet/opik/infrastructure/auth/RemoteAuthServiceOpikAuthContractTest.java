@@ -274,8 +274,11 @@ class RemoteAuthServiceOpikAuthContractTest {
     }
 
     private void createUser(String adminSession, String username, String role) throws Exception {
-        post("/auth/api/users", Map.of("username", username, "role", role, "password", username + "-Passw0rd!"),
+        post("/auth/api/users", Map.of("username", username, "role", role, "password", username + "-Initial0!"),
                 adminSession);
+        // admin-set passwords must be changed before opik-auth lets the account use Opik
+        post("/auth/api/me/password", Map.of("currentPassword", username + "-Initial0!",
+                "newPassword", username + "-Passw0rd!"), login(username, username + "-Initial0!"));
     }
 
     private JsonNode post(String path, Object body, String session) throws Exception {

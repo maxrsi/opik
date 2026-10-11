@@ -112,6 +112,7 @@ public class ProtocolResource {
         }
         Principal principal = authCore.principal(cred, workspace)
                 .orElseThrow(() -> ApiError.forbidden("User has no access to the workspace"));
+        requirePasswordChanged(principal);
         var missing = AuthCore.missing(principal.permissions(), request.requiredPermissions());
         if (!missing.isEmpty()) {
             audit.log(AuditEvent.builder()
@@ -127,6 +128,16 @@ public class ProtocolResource {
             throw ApiError.forbidden("User has no permission: " + String.join(", ", missing));
         }
         return new AuthResponse(principal.username(), workspace.id(), workspace.name(), List.of());
+    }
+
+    /**
+     * Initial / admin-reset passwords must be replaced before the account can use Opik (the UI forces the change;
+     * this keeps a scripted client from skipping it).
+     */
+    static void requirePasswordChanged(Principal principal) {
+        if (principal.user().mustChangePassword()) {
+            throw ApiError.forbidden("Password change required");
+        }
     }
 
     // ------------------------------------------------------------------ permissions
@@ -162,6 +173,7 @@ public class ProtocolResource {
                 .orElseThrow(() -> ApiError.forbidden("User has no access to the workspace"));
         var principal = authCore.principal(cred, workspace)
                 .orElseThrow(() -> ApiError.forbidden("User has no access to the workspace"));
+        requirePasswordChanged(principal);
         var permissions = principal.permissions().stream().sorted()
                 .map(name -> new Permission(name, "true"))
                 .toList();

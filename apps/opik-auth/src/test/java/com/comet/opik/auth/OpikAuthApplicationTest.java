@@ -118,8 +118,15 @@ class OpikAuthApplicationTest {
 
     String createUser(String username, String role) throws Exception {
         var res = session("POST", "/auth/api/users", adminSession,
-                Map.of("username", username, "role", role, "password", username + "-Passw0rd!"));
+                Map.of("username", username, "role", role, "password", username + "-Initial0!"));
         assertThat(res.status()).as(res.body()).isEqualTo(201);
+        assertThat(res.json().path("user").path("mustChangePassword").asBoolean()).isTrue();
+        // admin-set passwords must be replaced before the account can use Opik
+        String token = login(username, username + "-Initial0!");
+        assertThat(session("POST", "/opik/auth-session", token, authReq("default")).status()).isEqualTo(403);
+        var change = session("POST", "/auth/api/me/password", token,
+                Map.of("currentPassword", username + "-Initial0!", "newPassword", username + "-Passw0rd!"));
+        assertThat(change.status()).as(change.body()).isEqualTo(204);
         return res.json().path("user").path("id").asText();
     }
 
@@ -141,6 +148,15 @@ class OpikAuthApplicationTest {
         assertThat(me.json().path("workspaceName").asText()).isEqualTo("default");
         assertThat(me.json().path("uiApiKey").asText()).startsWith("opk_");
         assertThat(me.json().path("permissions").toString()).contains("user_manage", "workspace_write");
+
+        // before the forced password change: no Opik access, no API keys
+        var blocked = session("POST", "/opik/auth-session", token, authReq("default", "project_data_view"));
+        assertThat(blocked.status()).isEqualTo(403);
+        assertThat(blocked.json().path("msg").asText()).isEqualTo("Password change required");
+        assertThat(call("POST", "/opik/auth", authReq("default"),
+                Map.of("Authorization", me.json().path("uiApiKey").asText())).status()).isEqualTo(403);
+        assertThat(session("POST", "/auth/api/me/api-keys", token, Map.of("name", "early")).status())
+                .isEqualTo(403);
 
         var change = session("POST", "/auth/api/me/password", token,
                 Map.of("currentPassword", ADMIN_PASSWORD, "newPassword", "New-Admin-Password-2"));

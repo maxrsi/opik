@@ -119,6 +119,7 @@ public class AuthApiResource {
     public Response createApiKey(CreateApiKeyRequest request, @Context HttpHeaders headers,
             @Context HttpServletRequest http) {
         var p = principals.require(headers);
+        ProtocolResource.requirePasswordChanged(p);
         var created = accounts.createApiKey(p, request == null ? null : request.name(),
                 request == null ? null : request.expiresInDays());
         accounts.audit().log(accounts.principalEvent(p, RequestMetas.of(http)).action("apikey.create")
