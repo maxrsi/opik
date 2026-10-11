@@ -15,7 +15,7 @@ LABEL org.opencontainers.image.description="Self-hosted login / RBAC service for
 
 # DL3033: AL2023 packages track a rolling security channel
 # hadolint ignore=DL3033
-RUN yum install -y shadow-utils curl && yum clean all && rm -rf /var/cache/yum
+RUN yum install -y --allowerasing shadow-utils curl && yum clean all && rm -rf /var/cache/yum
 
 WORKDIR /opt/opik-auth
 COPY --chown=1001:1001 config.yml ./
