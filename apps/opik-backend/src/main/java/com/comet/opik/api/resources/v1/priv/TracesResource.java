@@ -208,6 +208,7 @@ public class TracesResource {
     })
     @JsonView(Trace.View.Public.class)
     @RateLimited(value = "searchTraces:{workspaceId}", shouldAffectWorkspaceLimit = false, shouldAffectUserGeneralLimit = false)
+    @RequiredPermissions(WorkspaceUserPermission.PROJECT_DATA_VIEW)
     public ChunkedOutput<JsonNode> searchTraces(
             @RequestBody(content = @Content(schema = @Schema(implementation = TraceSearchStreamRequest.class))) @NotNull @Valid TraceSearchStreamRequest request) {
 
@@ -738,6 +739,7 @@ public class TracesResource {
             }), maxItems = 2000))),
             @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorMessage.class)))
     })
+    @RequiredPermissions(WorkspaceUserPermission.PROJECT_DATA_VIEW)
     public ChunkedOutput<JsonNode> searchTraceThreads(
             @RequestBody(content = @Content(schema = @Schema(implementation = TraceThreadSearchStreamRequest.class))) @NotNull @Valid TraceThreadSearchStreamRequest request) {
 
@@ -778,6 +780,7 @@ public class TracesResource {
             @ApiResponse(responseCode = "200", description = "Trace thread resource", content = @Content(schema = @Schema(implementation = TraceThread.class))),
             @ApiResponse(responseCode = "404", description = "Not found", content = @Content(schema = @Schema(implementation = ErrorMessage.class)))
     })
+    @RequiredPermissions(WorkspaceUserPermission.PROJECT_DATA_VIEW)
     public Response getTraceThread(
             @RequestBody(content = @Content(schema = @Schema(implementation = TraceThreadIdentifier.class))) @NotNull @Valid TraceThreadIdentifier identifier) {
 

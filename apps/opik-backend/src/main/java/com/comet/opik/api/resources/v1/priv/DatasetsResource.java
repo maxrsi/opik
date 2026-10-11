@@ -293,6 +293,7 @@ public class DatasetsResource {
             @ApiResponse(responseCode = "200", description = "Dataset resource", content = @Content(schema = @Schema(implementation = Dataset.class))),
     })
     @JsonView(Dataset.View.Public.class)
+    @RequiredPermissions(WorkspaceUserPermission.DATASET_VIEW)
     public Response getDatasetByIdentifier(
             @RequestBody(content = @Content(schema = @Schema(implementation = DatasetIdentifier.class))) @NotNull @Valid DatasetIdentifier identifier) {
 
@@ -455,6 +456,7 @@ public class DatasetsResource {
                     ErrorMessage.class
             }), maxItems = 2000)))
     })
+    @RequiredPermissions(WorkspaceUserPermission.DATASET_VIEW)
     public ChunkedOutput<JsonNode> streamDatasetItems(
             @RequestBody(content = @Content(schema = @Schema(implementation = DatasetItemStreamRequest.class))) @NotNull @Valid DatasetItemStreamRequest request,
             @Context HttpServletResponse httpResponse) {
@@ -910,6 +912,7 @@ public class DatasetsResource {
     })
     @JsonView(DatasetExportJob.View.Public.class)
     @RateLimited
+    @RequiredPermissions(WorkspaceUserPermission.DATASET_VIEW)
     public Response startDatasetExport(@PathParam("id") @NotNull UUID datasetId) {
 
         String workspaceId = requestContext.get().getWorkspaceId();

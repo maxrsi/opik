@@ -1,0 +1,85 @@
+# Write endpoints (POST/PUT/PATCH/DELETE) WITHOUT @RequiredPermissions, as Class#method.
+# Guarded by EndpointPermissionCoverageTest (fork-only). With AUTH_UNANNOTATED_WRITE_PERMISSION set (docker-compose
+# auth override: workspace_write) these require that fallback permission unless they are listed in
+# AUTH_UNANNOTATED_WRITE_EXEMPTIONS. When the test fails after an upstream sync, classify each new entry:
+#   - read-only POST (search/stream/retrieve...)  -> add a *_VIEW @RequiredPermissions annotation
+#   - must be callable by every member            -> add it to AUTH_UNANNOTATED_WRITE_EXEMPTIONS
+#   - genuine write                               -> accept the fallback and add it to this list
+# Entries outside /v1/private (oauth, internal) are listed for completeness; AuthFilter does not use permissions there.
+AgentConfigsResource#createAgentConfig
+AgentConfigsResource#createBlueprintFromMask
+AgentConfigsResource#createOrUpdateEnvs
+AgentConfigsResource#deleteEnv
+AgentConfigsResource#removeConfigKeys
+AgentConfigsResource#setEnvByBlueprintName
+AgentConfigsResource#updateAgentConfig
+AgentInsightsEnrollmentResource#enrolInAutoFirstRun
+AgentInsightsResource#reportIssues
+AgentInsightsResource#updateIssue
+AnalyticsQueriesResource#executeQuery
+AnalyticsQueriesResource#executeScopedQuery
+AssertionResultsResource#storeAssertionsBatch
+AttachmentResource#completeMultiPartUpload
+AttachmentResource#deleteAttachments
+AttachmentResource#startMultiPartUpload
+AttachmentResource#uploadAttachment
+AuthenticationResource#checkAccess
+ChatCompletionsResource#create
+DatasetsResource#applyDatasetItemChanges
+DatasetsResource#batchUpdate
+DatasetsResource#createDatasetItems
+DatasetsResource#createDatasetItemsFromCsv
+DatasetsResource#createDatasetItemsFromJson
+DatasetsResource#createDatasetItemsFromSpans
+DatasetsResource#createDatasetItemsFromTraces
+DatasetsResource#expandDataset
+DatasetsResource#markDatasetExportJobViewed
+DatasetsResource#patchDatasetItem
+EnvironmentsResource#create
+EnvironmentsResource#deleteEnvironmentsBatch
+EnvironmentsResource#update
+ExperimentsResource#batchUpdate
+ExperimentsResource#createExperimentItems
+ExperimentsResource#deleteExperimentItems
+ExperimentsResource#deleteExperimentsById
+ExperimentsResource#experimentItemsBulk
+ExperimentsResource#finishExperiments
+ExperimentsResource#update
+FeedbackDefinitionResource#create
+FeedbackDefinitionResource#deleteById
+FeedbackDefinitionResource#deleteFeedbackDefinitionsBatch
+FeedbackDefinitionResource#update
+GuardrailsResource#createGuardrails
+LocalRunnersResource#appendLogs
+LocalRunnersResource#cancelJob
+LocalRunnersResource#createBridgeCommand
+LocalRunnersResource#createJob
+LocalRunnersResource#disconnectRunner
+LocalRunnersResource#heartbeat
+LocalRunnersResource#nextBridgeCommands
+LocalRunnersResource#nextJob
+LocalRunnersResource#patchChecklist
+LocalRunnersResource#registerAgents
+LocalRunnersResource#reportBridgeResult
+LocalRunnersResource#reportResult
+OAuthAuthorizeResource#consent
+OAuthRegisterResource#register
+OAuthTokenResource#revoke
+OAuthTokenResource#token
+OAuthValidateTokenResource#validate
+OllamaResource#listModels
+OllamaResource#testConnection
+OllieStateResource#delete
+OllieStateResource#upload
+OpenTelemetryResource#receiveJsonTraces
+OpenTelemetryResource#receiveProtobufTraces
+PairingResource#activate
+PairingResource#createSession
+ProjectsResource#update
+ReportFailuresResource#create
+RetentionRulesResource#createRule
+RetentionRulesResource#deactivateRule
+SpansResource#deleteById
+TracesResource#deleteTraceThreads
+UsageResource#findProjects
+WelcomeWizardResource#submitWizard

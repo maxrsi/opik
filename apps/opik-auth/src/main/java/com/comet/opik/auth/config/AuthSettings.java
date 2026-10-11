@@ -12,7 +12,7 @@ import lombok.Setter;
 public class AuthSettings {
 
     /** Secret used to derive the AES-GCM key that protects session-derived UI API keys. 32+ bytes recommended. */
-    @NotNull @JsonProperty
+    @JsonProperty
     private String secret = "";
 
     /** Name of the session cookie. MUST stay {@code sessionToken}: opik-backend reads exactly this cookie. */
@@ -26,7 +26,7 @@ public class AuthSettings {
      * Allowed browser origins for state-changing /auth/api calls (CSRF defence), comma separated.
      * Empty disables the Origin check.
      */
-    @NotNull @JsonProperty
+    @JsonProperty
     private String publicOrigins = "";
 
     @NotNull @JsonProperty
@@ -39,7 +39,7 @@ public class AuthSettings {
     private String bootstrapAdminUsername = "admin";
 
     /** Empty: a random password is generated and printed once to the log. */
-    @NotNull @JsonProperty
+    @JsonProperty
     private String bootstrapAdminPassword = "";
 
     @Min(1) @JsonProperty

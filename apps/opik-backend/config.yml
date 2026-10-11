@@ -471,6 +471,17 @@ authentication:
   # Default: 1s
   # Description: Upper bound on the exponential backoff between auth request attempts.
   requestRetryMaxBackoff: ${AUTH_REQUEST_RETRY_MAX_BACKOFF:-1s}
+  # Default: false
+  # Description: Accept browser sessions for the 'default' workspace. Needed by self-hosted single-workspace
+  #   deployments (e.g. opik-auth) that keep all data in 'default'. Has no effect when authentication is disabled.
+  allowDefaultWorkspaceForSession: ${AUTH_ALLOW_DEFAULT_WORKSPACE_FOR_SESSION:-false}
+  # Default: empty (upstream behaviour)
+  # Description: Permission required by POST/PUT/PATCH/DELETE endpoints without @RequiredPermissions, e.g.
+  #   'workspace_write'. Empty means such endpoints only require authentication.
+  unannotatedWritePermission: ${AUTH_UNANNOTATED_WRITE_PERMISSION:-}
+  # Default: empty
+  # Description: Comma separated 'ResourceClass#method' entries exempted from unannotatedWritePermission.
+  unannotatedWriteExemptions: ${AUTH_UNANNOTATED_WRITE_EXEMPTIONS:-}
 
 # Liveness health check for the shared outbound HTTP client (see shared_http_client under healthChecks)
 sharedHttpClientHealthCheck:

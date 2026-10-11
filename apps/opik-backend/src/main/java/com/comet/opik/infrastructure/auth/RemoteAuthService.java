@@ -128,6 +128,12 @@ class RemoteAuthService implements AuthService {
      */
     private final boolean resolvePermissions;
 
+    /**
+     * See {@code AuthenticationConfig#allowDefaultWorkspaceForSession}: when false (default) browser sessions are
+     * rejected for the {@code default} workspace.
+     */
+    private final boolean allowDefaultWorkspaceForSession;
+
     RemoteAuthService(@NonNull Client client,
             @NonNull RetriableHttpClient retriableHttpClient,
             @NonNull AuthenticationConfig.UrlConfig reactServiceUrl,
@@ -139,6 +145,23 @@ class RemoteAuthService implements AuthService {
             @NonNull Duration requestRetryMaxBackoff,
             @NonNull WorkspacePermissionsService workspacePermissionsService,
             boolean resolvePermissions) {
+        this(client, retriableHttpClient, reactServiceUrl, requestContext, cacheService, requestTimeout,
+                requestMaxRetries, requestRetryMinBackoff, requestRetryMaxBackoff, workspacePermissionsService,
+                resolvePermissions, false);
+    }
+
+    RemoteAuthService(@NonNull Client client,
+            @NonNull RetriableHttpClient retriableHttpClient,
+            @NonNull AuthenticationConfig.UrlConfig reactServiceUrl,
+            @NonNull Provider<RequestContext> requestContext,
+            @NonNull CacheService cacheService,
+            Duration requestTimeout,
+            int requestMaxRetries,
+            @NonNull Duration requestRetryMinBackoff,
+            @NonNull Duration requestRetryMaxBackoff,
+            @NonNull WorkspacePermissionsService workspacePermissionsService,
+            boolean resolvePermissions,
+            boolean allowDefaultWorkspaceForSession) {
         this.client = client;
         this.retriableHttpClient = retriableHttpClient;
         this.reactServiceUrl = reactServiceUrl;
@@ -147,6 +170,7 @@ class RemoteAuthService implements AuthService {
         this.requestTimeout = requestTimeout;
         this.workspacePermissionsService = workspacePermissionsService;
         this.resolvePermissions = resolvePermissions;
+        this.allowDefaultWorkspaceForSession = allowDefaultWorkspaceForSession;
         // The retry inputs are only ever needed to build this, so they are not kept as fields.
         this.retryPolicy = RetryUtils.handleHttpErrors(requestMaxRetries, requestRetryMinBackoff,
                 requestRetryMaxBackoff);
@@ -468,7 +492,7 @@ class RemoteAuthService implements AuthService {
 
     private void authenticateUsingSessionToken(Cookie sessionToken, String workspaceName, String path,
             List<String> requiredPermissions) {
-        if (isDefaultWorkspace(workspaceName)) {
+        if (isDefaultWorkspace(workspaceName) && !allowDefaultWorkspaceForSession) {
             log.warn("Default workspace name is not allowed for UI authentication");
             throw new ClientErrorException(
                     NOT_ALLOWED_TO_ACCESS_WORKSPACE, Response.Status.FORBIDDEN);

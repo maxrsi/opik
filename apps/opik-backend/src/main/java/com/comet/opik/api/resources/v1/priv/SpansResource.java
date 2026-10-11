@@ -474,6 +474,7 @@ public class SpansResource {
     })
     @JsonView(View.Public.class)
     @RateLimited(value = "search_spans:{workspaceId}", shouldAffectWorkspaceLimit = false, shouldAffectUserGeneralLimit = false)
+    @RequiredPermissions(WorkspaceUserPermission.PROJECT_DATA_VIEW)
     public ChunkedOutput<JsonNode> searchSpans(
             @RequestBody(content = @Content(schema = @Schema(implementation = SpanSearchStreamRequest.class))) @NotNull @Valid SpanSearchStreamRequest request) {
         var workspaceId = requestContext.get().getWorkspaceId();
