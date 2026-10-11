@@ -130,7 +130,7 @@ const AuditLogPage: React.FC = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ANY}>Any source</SelectItem>
-            <SelectItem value="opik-backend">opik-backend</SelectItem>
+            <SelectItem value="backend">opik-backend</SelectItem>
             <SelectItem value="opik-auth">opik-auth</SelectItem>
           </SelectContent>
         </Select>
