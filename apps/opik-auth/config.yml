@@ -1,0 +1,53 @@
+# opik-auth configuration. Every value can be overridden with environment variables.
+server:
+  applicationConnectors:
+    - type: http
+      port: ${OPIK_AUTH_PORT:-8080}
+  adminConnectors:
+    - type: http
+      port: ${OPIK_AUTH_ADMIN_PORT:-8081}
+  requestLog:
+    appenders:
+      - type: console
+        # never log query strings / cookies of the auth endpoints
+        logFormat: '%h %l "%r" %s %b %D'
+
+logging:
+  level: ${OPIK_AUTH_LOG_LEVEL:-INFO}
+  loggers:
+    com.comet.opik.auth: ${OPIK_AUTH_LOG_LEVEL:-INFO}
+    liquibase: WARN
+
+database:
+  driverClass: com.mysql.cj.jdbc.Driver
+  url: ${OPIK_AUTH_DB_URL:-jdbc:mysql://localhost:3306/opik_auth?createDatabaseIfNotExist=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&rewriteBatchedStatements=true}
+  user: ${OPIK_AUTH_DB_USER:-opik_auth}
+  password: ${OPIK_AUTH_DB_PASS:-opik_auth}
+  maxSize: ${OPIK_AUTH_DB_POOL_SIZE:-16}
+  minSize: 2
+  validationQuery: SELECT 1
+  checkConnectionOnBorrow: true
+
+autoMigrate: ${OPIK_AUTH_AUTO_MIGRATE:-true}
+
+auth:
+  # REQUIRED, 32+ chars. Derives the AES-GCM key protecting session-derived UI API keys.
+  secret: ${OPIK_AUTH_SECRET:-}
+  cookieName: sessionToken
+  cookieSecure: ${OPIK_AUTH_COOKIE_SECURE:-false}
+  publicOrigins: ${OPIK_AUTH_PUBLIC_ORIGIN:-http://localhost:5173}
+  sessionIdleTimeout: ${OPIK_AUTH_SESSION_IDLE_TIMEOUT:-12h}
+  sessionAbsoluteTimeout: ${OPIK_AUTH_SESSION_ABSOLUTE_TIMEOUT:-7d}
+  bootstrapAdminUsername: ${OPIK_AUTH_BOOTSTRAP_ADMIN_USERNAME:-admin}
+  bootstrapAdminPassword: ${OPIK_AUTH_BOOTSTRAP_ADMIN_PASSWORD:-}
+  loginMaxFailures: ${OPIK_AUTH_LOGIN_MAX_FAILURES:-5}
+  loginLockout: ${OPIK_AUTH_LOGIN_LOCKOUT:-15m}
+  passwordMinLength: ${OPIK_AUTH_PASSWORD_MIN_LENGTH:-12}
+  defaultWorkspaceName: default
+
+clickhouse:
+  enabled: ${OPIK_AUTH_CH_ENABLED:-false}
+  url: ${OPIK_AUTH_CH_URL:-http://localhost:8123}
+  database: ${OPIK_AUTH_CH_DATABASE:-opik}
+  user: ${OPIK_AUTH_CH_USER:-opik}
+  password: ${OPIK_AUTH_CH_PASS:-opik}
