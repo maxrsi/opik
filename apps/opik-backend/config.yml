@@ -2263,3 +2263,32 @@ redaction:
   # on long base64 payloads. The match budget now bounds that rather than leaving it to the pattern, but an
   # anchored rule is still the difference between exact masking and a value withheld whole.
   rules: '${OPIK_REDACTION_RULES:-[]}'
+
+# Fork-only: audit log of write operations / denied requests, stored in ClickHouse audit_logs (TTL 180 days).
+audit:
+  # Default: false
+  enabled: ${AUDIT_ENABLED:-false}
+  # Default: true. Record requests rejected with 403 (any method) or 401 (write methods) as 'http.denied'.
+  recordDenied: ${AUDIT_RECORD_DENIED:-true}
+  queueCapacity: ${AUDIT_QUEUE_CAPACITY:-10000}
+  batchSize: ${AUDIT_BATCH_SIZE:-500}
+  flushInterval: ${AUDIT_FLUSH_INTERVAL:-2s}
+  # Regexes matched against "<METHOD> <path>"; matching write requests are not audited.
+  # Read-only POSTs and high-frequency SDK ingestion are excluded; deletes are always recorded.
+  excludeRoutes:
+    - '^POST /v1/private/.*/(search|stream|retrieve)$'
+    - '^POST /v1/private/workspaces/(metrics|costs)(/.*)?$'
+    - '^POST /v1/private/projects/[^/]+/metrics$'
+    - '^POST /v1/private/ollama/.*'
+    - '^POST /v1/private/auth$'
+    - '^(POST|PATCH|PUT) /v1/private/(traces|spans)(/batch)?$'
+    - '^PATCH /v1/private/(traces|spans)/[^/]+$'
+    - '^PUT /v1/private/(traces|spans)(/threads)?/feedback-scores$'
+    - '^(POST|PUT) /v1/private/(traces|spans)/threads/(close|open)$'
+    - '^POST /v1/private/otel/.*'
+    - '^(POST|PUT) /v1/private/attachment/upload.*'
+    - '^PUT /v1/private/assertion-results$'
+    - '^POST /v1/private/guardrails$'
+    - '^POST /v1/private/local-runners/.*/(heartbeats|jobs/next|bridge/commands/next|logs)$'
+    - '^POST /v1/private/(welcome-wizard|report-failures)$'
+    - '^(PUT|DELETE) /v1/private/ollie/state$'
