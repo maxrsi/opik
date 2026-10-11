@@ -29,9 +29,11 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Asynchronous writer of opik-auth audit events (login/logout/admin actions) into ClickHouse {@code audit_logs}
- * through the HTTP interface. Bounded queue, flushed every second; on failure the batch is logged and dropped
- * (there is no compliance requirement, the login path must never block on ClickHouse). The table itself is
- * created by opik-backend's analytics migration {@code 900001_create_audit_logs.sql}.
+ * through the HTTP interface. Bounded queue, flushed every second. A failed batch is kept for retry for up to
+ * {@link #RETRY_WINDOW} (bounded by the queue capacity) and dropped after that: there is no compliance requirement
+ * and the login path must never block on ClickHouse. The retry matters at first start: the table is created by
+ * opik-backend's analytics migration {@code 900001_create_audit_logs.sql}, which runs after opik-auth is up, so
+ * e.g. the {@code admin.bootstrap} event is written once the backend has migrated.
  */
 @Slf4j
 public class AuditLogger implements Managed {
@@ -42,7 +44,11 @@ public class AuditLogger implements Managed {
     private final ClickHouseSettings settings;
     private final ObjectMapper mapper;
     private final HttpClient http;
-    private final BlockingQueue<AuditEvent> queue = new ArrayBlockingQueue<>(10_000);
+    static final Duration RETRY_WINDOW = Duration.ofMinutes(15);
+    private static final int CAPACITY = 10_000;
+
+    private final BlockingQueue<AuditEvent> queue = new ArrayBlockingQueue<>(CAPACITY);
+    private final List<AuditEvent> retry = new ArrayList<>();
     private ScheduledExecutorService executor;
 
     public AuditLogger(ClickHouseSettings settings, ObjectMapper mapper) {
@@ -103,7 +109,8 @@ public class AuditLogger implements Managed {
     }
 
     synchronized void flush() {
-        List<AuditEvent> batch = new ArrayList<>();
+        List<AuditEvent> batch = new ArrayList<>(retry);
+        retry.clear();
         queue.drainTo(batch, 1000);
         if (batch.isEmpty()) {
             return;
@@ -124,13 +131,32 @@ public class AuditLogger implements Managed {
             if (response.statusCode() / 100 != 2) {
                 log.warn("Failed to write {} audit events to ClickHouse, status {}: {}", batch.size(),
                         response.statusCode(), StringUtils.left(response.body(), 500));
+                keepForRetry(batch);
             }
         } catch (Exception e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            log.warn("Failed to write {} audit events to ClickHouse", batch.size(), e);
+            log.warn("Failed to write {} audit events to ClickHouse: {}", batch.size(), e.toString());
+            keepForRetry(batch);
         }
+    }
+
+    private void keepForRetry(List<AuditEvent> batch) {
+        String oldest = CH_TIME.format(Instant.now().minus(RETRY_WINDOW));
+        // CH_TIME is lexicographically ordered, so string comparison works.
+        batch.stream()
+                .filter(e -> e.eventTime() != null && e.eventTime().compareTo(oldest) >= 0)
+                .limit(CAPACITY)
+                .forEach(retry::add);
+        int dropped = batch.size() - retry.size();
+        if (dropped > 0) {
+            log.warn("Dropped {} audit events older than {}", dropped, RETRY_WINDOW);
+        }
+    }
+
+    int pendingRetries() {
+        return retry.size();
     }
 
     String basicAuth() {
